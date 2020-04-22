@@ -1,5 +1,5 @@
-#spring:
-#  data:
-#    elasticsearch:
-#      cluster-name: es-mongodb
-#      cluster-nodes: localhost:9200
+spring:
+  data:
+    elasticsearch:
+      cluster-name: elasticsearch
+      cluster-nodes: localhost:9300

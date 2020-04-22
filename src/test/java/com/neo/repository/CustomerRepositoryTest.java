@@ -144,10 +144,10 @@ public class CustomerRepositoryTest {
                 .build();
         Page<Customer> search = repository.search(searchQuery);
         String string = search.getContent().toString();
-        System.out.println(string);
+//        System.out.println(string);
         SearchQuery searchQuery1 = new NativeSearchQueryBuilder()
                 .withIndices("customer", "customer")
-                .withQuery(QueryBuilders.boolQuery().must(termQuery("address", "北京"))
+                .withQuery(QueryBuilders.boolQuery().must(matchQuery("address", "北京"))
                 .should(rangeQuery("age").lt(25)).must(matchQuery("userName", "o"))).build();
         Page<Customer> search1 = repository.search(searchQuery1);
         System.out.println(search1.getContent().toString());
