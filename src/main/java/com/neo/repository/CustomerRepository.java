@@ -14,6 +14,7 @@ public interface CustomerRepository extends ElasticsearchRepository<Customer, St
 	public Customer findByUserName(String userName);
 	public int  deleteByUserName(String userName);
 	public Page<Customer> findByAddress(String address, Pageable pageable);
+	public Page<Customer> findByAddressLike(String address, Pageable pageable);
 
 
 }

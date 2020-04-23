@@ -1,10 +1,22 @@
 package com.neo.service.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.neo.model.Customer;
 import com.neo.repository.CustomerRepository;
 import com.neo.service.CustomersInterface;
+import com.neo.util.ESHighLevelUtil;
+import com.neo.util.ESUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
+import org.elasticsearch.action.ActionRequestValidationException;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.get.GetResult;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -12,12 +24,18 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
+import org.springframework.data.elasticsearch.core.query.*;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
@@ -30,29 +48,42 @@ public class CustomersInterfaceImpl implements CustomersInterface {
     @Autowired
     private CustomerRepository customerRepository;
 
+    @Autowired
+    private ElasticsearchTemplate elasticsearchTemplate;
+
+    private static final String INDEX = "customer";
+
+    private static final String TYPE = "customer";
+
+    @Autowired
+    private ESUtil es;
+
     @Override
-    public List<Customer> searchCity(Integer pageNumber, Integer pageSize, String searchContent) {
-/*        // 分页参数
+    public Page<Customer> searchCity(Integer pageNumber, Integer pageSize, String searchContent) {
+        // 分页参数
         Pageable pageable = new PageRequest(pageNumber, pageSize);
-
         // Function Score Query
-        FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery()
-                .add(QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("cityname", searchContent)),
-                        ScoreFunctionBuilders.weightFactorFunction(1000))
-                .add(QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("description", searchContent)),
-                        ScoreFunctionBuilders.weightFactorFunction(100));
-
+        FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(
+                QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("address", "西安")), ScoreFunctionBuilders.weightFactorFunction(1));
+//                .add(QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("description", searchContent)),
+//                        ScoreFunctionBuilders.weightFactorFunction(100));
         // 创建搜索 DSL 查询
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
                 .withPageable(pageable)
                 .withQuery(functionScoreQueryBuilder).build();
-
-       logger.info("\n searchCity(): searchContent [" + searchContent + "] \n DSL  = \n " + searchQuery.getQuery().toString());
-
+        logger.info("\n searchCity(): searchContent [" + searchContent + "] \n DSL  = \n " + searchQuery.getQuery().toString());
         Page<Customer> searchPageResults = customerRepository.search(searchQuery);
-        return searchPageResults.getContent();
-        */
-        return null;
+        return searchPageResults;
+    }
+
+    @Override
+    public Page<Customer> searchCustromer() {
+        Sort sort = new Sort(Sort.Direction.DESC, "address.keyword");
+        Pageable pageable = PageRequest.of(0, 10, sort);
+        Customer customer = Customer.builder().address("北京").build();
+        Page<Customer> customers = customerRepository.findByAddress("北京", pageable);
+//        Page<Customer> customers = customerRepository.findByAddressLike("北京", pageable);
+        return customers;
     }
 
     /**
@@ -88,6 +119,8 @@ public class CustomersInterfaceImpl implements CustomersInterface {
 //                .withPageable(PageRequest.of(1, 1))
                 .build();
         Page<Customer> search1 = customerRepository.search(searchQuery1);
+        Customer customer = Customer.builder().address("西").build();
+        IndexQuery index = new IndexQueryBuilder().withId("1").withObject(customer).build();
         return search1;
     }
 
@@ -102,5 +135,41 @@ public class CustomersInterfaceImpl implements CustomersInterface {
         ).build();
         List<Customer> content = customerRepository.search(searchQuery2).getContent();
         return content;
+    }
+
+    @Override
+    public boolean updateCustomer() throws Exception {
+        Customer customer = customerRepository.findByUserName("summer");
+        System.out.println(customer);
+        customer.setAddress("秦皇岛7");
+//        es.update(INDEX, TYPE, customer.getId(), customer);
+        ESHighLevelUtil esHighLevelUtil = new ESHighLevelUtil(new String[]{"localhost:9200"});
+        esHighLevelUtil.updateData(INDEX, TYPE, customer.getId(), customer);
+//        repository.save(customer);
+//        Customer xcustomer = repository.findByUserName("summer");
+//        System.out.println(xcustomer);
+//        Map<String, Object> map = new HashMap<>();
+//        map.put("address", customer.getAddress());
+//        List<Object> objects = Lists.newArrayList();
+//        objects.add("address");
+//        objects.add(customer.getAddress());
+////        UpdateRequest updateRequest = new UpdateRequest().index("customer").
+////                type("customer").id(customer.getId()).doc(map)
+////                .fetchSource(new String[]{"id", "userName"}, null);
+////        UpdateResponse update = elasticsearchTemplate.update(
+////                new UpdateQueryBuilder().withId(customer.getId())
+////                        .withIndexName("customer").withType("customer")
+////                        .withUpdateRequest(updateRequest).withClass(Customer.class).build());
+//        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, customer.getId())
+//                .doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE).detectNoop(false);
+//        UpdateQuery updateQuery = new UpdateQuery();
+//        updateQuery.setId(customer.getId());
+//        updateQuery.setIndexName(INDEX);
+//        updateQuery.setType(TYPE);
+//
+//        updateQuery.setUpdateRequest(updateRequest);
+//        GetResult getResult = elasticsearchTemplate.update(updateQuery).getGetResult();
+//        return getResult != null;
+        return false;
     }
 }

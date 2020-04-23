@@ -1,10 +1,20 @@
 
 package com.neo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
 
+@Data
+@Builder
+@AllArgsConstructor
 @Document(indexName = "customer", type = "customer", shards = 1, replicas = 0, refreshInterval = "-1")
 public class Customer {
 

@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -28,6 +29,23 @@ public class EsController {
     public Page<Customer> getResult() {
         Page<Customer> customers = customersInterface.searchCustromer(0, 10, "");
         return customers;
+    }
+
+    @RequestMapping("/func")
+    public Page<Customer> getFuncResult() {
+        Page<Customer> customers = customersInterface.searchCity(0, 10, "");
+        return customers;
+    }
+
+    @RequestMapping("/sear")
+    public Page<Customer> sear() {
+        Page<Customer> customers = customersInterface.searchCustromer();
+        return customers;
+    }
+
+    @RequestMapping("/update")
+    public Boolean update() throws Exception {
+        return customersInterface.updateCustomer();
     }
 }
 

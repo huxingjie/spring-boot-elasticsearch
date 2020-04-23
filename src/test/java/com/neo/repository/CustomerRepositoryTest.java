@@ -1,7 +1,16 @@
 package com.neo.repository;
 
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.neo.model.Customer;
+import org.assertj.core.util.Lists;
+import org.elasticsearch.action.ActionRequestValidationException;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -21,14 +30,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.ResultsExtractor;
-import org.springframework.data.elasticsearch.core.query.FetchSourceFilterBuilder;
-import org.springframework.data.elasticsearch.core.query.NativeSearchQueryBuilder;
-import org.springframework.data.elasticsearch.core.query.SearchQuery;
+import org.springframework.data.elasticsearch.core.query.*;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -38,6 +50,10 @@ public class CustomerRepositoryTest {
 
     @Autowired
     private ElasticsearchTemplate elasticsearchTemplate;
+
+    private static final String INDEX = "customer";
+
+    private static final String TYPE = "customer";
 
     @Test
     public void saveCustomers() {
@@ -64,13 +80,55 @@ public class CustomerRepositoryTest {
     }
 
     @Test
-    public void updateCustomers() {
+    public void updateCustomers() throws IOException {
+        Customer customer = repository.findByUserName("summer");
+        System.out.println(customer);
+        customer.setAddress("秦皇岛");
+//        repository.save(customer);
+//        Customer xcustomer = repository.findByUserName("summer");
+//        System.out.println(xcustomer);
+        Map<String, Object> map = new HashMap<>();
+        map.put("address", customer.getAddress());
+        List<Object> objects = Lists.newArrayList();
+        objects.add("address");
+        objects.add(customer.getAddress());
+//        UpdateRequest updateRequest = new UpdateRequest().index("customer").
+//                type("customer").id(customer.getId()).doc(map)
+//                .fetchSource(new String[]{"id", "userName"}, null);
+        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, customer.getId())
+                .doc(jsonBuilder().startObject().field("address", customer.getAddress()).endObject())
+                .fetchSource(true).setRefreshPolicy(WriteRequest.RefreshPolicy.WAIT_UNTIL)
+                .retryOnConflict(5);
+        ActionRequestValidationException validate = updateRequest.validate();
+//        UpdateResponse update = elasticsearchTemplate.update(
+//                new UpdateQueryBuilder().withId(customer.getId())
+//                        .withIndexName("customer").withType("customer")
+//                        .withUpdateRequest(updateRequest).withClass(Customer.class).build());
+        UpdateQuery updateQuery = new UpdateQueryBuilder().withId(customer.getId())
+                .withUpdateRequest(updateRequest)
+                .withClass(Customer.class).build();
+        UpdateResponse update = elasticsearchTemplate.update(updateQuery);
+        System.out.println(update);
+    }
+
+    @Test
+    public void updateCustomers2() throws IOException {
         Customer customer = repository.findByUserName("summer");
         System.out.println(customer);
         customer.setAddress("北京市海淀区西直门");
-        repository.save(customer);
-        Customer xcustomer = repository.findByUserName("summer");
-        System.out.println(xcustomer);
+        IndexRequest indexRequest = new IndexRequest("customer", "customer", customer.getId())
+                .source(jsonBuilder()
+                        .startObject()
+                        .field("userName", customer.getUserName())
+                        .field("address", customer.getAddress())
+                        .endObject());
+        UpdateRequest updateRequest = new UpdateRequest("customer", "customer", customer.getId())
+                .doc(jsonBuilder()
+                        .startObject()
+                        .field("address", "北京市海淀区西直门")
+                        .endObject())
+                .upsert(indexRequest);
+        UpdateResponse update = elasticsearchTemplate.update(new UpdateQueryBuilder().withUpdateRequest(updateRequest).build());
     }
 
     @Test
@@ -148,7 +206,7 @@ public class CustomerRepositoryTest {
         SearchQuery searchQuery1 = new NativeSearchQueryBuilder()
                 .withIndices("customer", "customer")
                 .withQuery(QueryBuilders.boolQuery().must(matchQuery("address", "北京"))
-                .should(rangeQuery("age").lt(25)).must(matchQuery("userName", "o"))).build();
+                        .should(rangeQuery("age").lt(25)).must(matchQuery("userName", "o"))).build();
         Page<Customer> search1 = repository.search(searchQuery1);
         System.out.println(search1.getContent().toString());
     }
