@@ -22,6 +22,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -61,7 +62,6 @@ public class CustomersInterfaceImpl implements CustomersInterface {
     @Override
     public Page<Customer> searchCity(Integer pageNumber, Integer pageSize, String searchContent) {
         // 分页参数
-        Pageable pageable = new PageRequest(pageNumber, pageSize);
         // Function Score Query
         FunctionScoreQueryBuilder functionScoreQueryBuilder = QueryBuilders.functionScoreQuery(
                 QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("address", "西安")), ScoreFunctionBuilders.weightFactorFunction(1));
@@ -69,7 +69,7 @@ public class CustomersInterfaceImpl implements CustomersInterface {
 //                        ScoreFunctionBuilders.weightFactorFunction(100));
         // 创建搜索 DSL 查询
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
-                .withPageable(pageable)
+                .withPageable(PageRequest.of(pageNumber, pageSize))
                 .withQuery(functionScoreQueryBuilder).build();
         logger.info("\n searchCity(): searchContent [" + searchContent + "] \n DSL  = \n " + searchQuery.getQuery().toString());
         Page<Customer> searchPageResults = customerRepository.search(searchQuery);
@@ -78,8 +78,7 @@ public class CustomersInterfaceImpl implements CustomersInterface {
 
     @Override
     public Page<Customer> searchCustromer() {
-        Sort sort = new Sort(Sort.Direction.DESC, "address.keyword");
-        Pageable pageable = PageRequest.of(0, 10, sort);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "address.keyword"));
         Customer customer = Customer.builder().address("北京").build();
         Page<Customer> customers = customerRepository.findByAddress("北京", pageable);
 //        Page<Customer> customers = customerRepository.findByAddressLike("北京", pageable);
@@ -141,10 +140,10 @@ public class CustomersInterfaceImpl implements CustomersInterface {
     public boolean updateCustomer() throws Exception {
         Customer customer = customerRepository.findByUserName("summer");
         System.out.println(customer);
-        customer.setAddress("秦皇岛7");
+        customer.setAddress("秦皇岛9");
 //        es.update(INDEX, TYPE, customer.getId(), customer);
-        ESHighLevelUtil esHighLevelUtil = new ESHighLevelUtil(new String[]{"localhost:9200"});
-        esHighLevelUtil.updateData(INDEX, TYPE, customer.getId(), customer);
+//        ESHighLevelUtil esHighLevelUtil = new ESHighLevelUtil(new String[]{"localhost:9200"});
+//        esHighLevelUtil.updateData(INDEX, TYPE, customer.getId(), customer);
 //        repository.save(customer);
 //        Customer xcustomer = repository.findByUserName("summer");
 //        System.out.println(xcustomer);
@@ -153,22 +152,21 @@ public class CustomersInterfaceImpl implements CustomersInterface {
 //        List<Object> objects = Lists.newArrayList();
 //        objects.add("address");
 //        objects.add(customer.getAddress());
-////        UpdateRequest updateRequest = new UpdateRequest().index("customer").
-////                type("customer").id(customer.getId()).doc(map)
-////                .fetchSource(new String[]{"id", "userName"}, null);
-////        UpdateResponse update = elasticsearchTemplate.update(
-////                new UpdateQueryBuilder().withId(customer.getId())
-////                        .withIndexName("customer").withType("customer")
-////                        .withUpdateRequest(updateRequest).withClass(Customer.class).build());
-//        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, customer.getId())
-//                .doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE).detectNoop(false);
-//        UpdateQuery updateQuery = new UpdateQuery();
-//        updateQuery.setId(customer.getId());
-//        updateQuery.setIndexName(INDEX);
-//        updateQuery.setType(TYPE);
-//
-//        updateQuery.setUpdateRequest(updateRequest);
-//        GetResult getResult = elasticsearchTemplate.update(updateQuery).getGetResult();
+//        UpdateRequest updateRequest = new UpdateRequest().index("customer").
+//                type("customer").id(customer.getId()).doc(map)
+//                .fetchSource(new String[]{"id", "userName"}, null);
+//        UpdateResponse update = elasticsearchTemplate.update(
+//                new UpdateQueryBuilder().withId(customer.getId())
+//                        .withIndexName("customer").withType("customer")
+//                        .withUpdateRequest(updateRequest).withClass(Customer.class).build());
+        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, customer.getId())
+                .doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        UpdateQuery updateQuery = new UpdateQuery();
+        updateQuery.setId(customer.getId());
+        updateQuery.setIndexName(INDEX);
+        updateQuery.setType(TYPE);
+        updateQuery.setUpdateRequest(updateRequest);
+        GetResult getResult = elasticsearchTemplate.update(updateQuery).getGetResult();
 //        return getResult != null;
         return false;
     }

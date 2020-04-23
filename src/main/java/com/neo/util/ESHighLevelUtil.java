@@ -41,7 +41,6 @@ import java.util.Objects;
  * @date 2018年1月9日 下午5:03:34
  */
 @Slf4j
-@Component
 public class ESHighLevelUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(ESUtil.class);
@@ -54,28 +53,30 @@ public class ESHighLevelUtil {
 
     private static final int ADDRESS_LENGTH = 2;
 
+    private static final String ipAddress = "localhost:9200";
+
     private static final String HTTP_SCHEME = "http";
 
     static {
         System.setProperty("es.set.netty.runtime.available.processors", "false");
     }
-
     //	private String clusterAddress = "172.18.0.153:10229";
-    @PostConstruct
-    public void init() {
-        try {
-            new ESHighLevelUtil(new String[]{"localhost:9300"});
-        } catch (Exception e) {
-            logger.error("ES init failed!", e);
-        }
-    }
+//    @PostConstruct
+//    public void init() {
+////        try {
+////            new ESHighLevelUtil(new String[]{"localhost:9300"});
+////        } catch (Exception e) {
+////            logger.error("ES init failed!", e);
+////        }
+//    }
 
-    public ESHighLevelUtil(String[] ipAddress) throws Exception {
+    public ESHighLevelUtil() throws Exception {
         if (restHighLevelClient == null) {
-            HttpHost[] hosts = Arrays.stream(ipAddress)
+            HttpHost[] hosts = Arrays.stream(ipAddress.split(":"))
                     .map(this::makeHttpHost)
                     .filter(Objects::nonNull)
                     .toArray(HttpHost[]::new);
+            System.out.println("hosts :"+hosts.toString());
             log.debug("hosts:{}", Arrays.toString(hosts));
             restClientBuilder = RestClient.builder(hosts);
             restClientBuilder.setMaxRetryTimeoutMillis(MAX);

@@ -148,8 +148,7 @@ public class CustomerRepositoryTest {
     public void fetchPageCustomers() {
         System.out.println("Customers found with fetchPageCustomers:");
         System.out.println("-------------------------------");
-        Sort sort = new Sort(Sort.Direction.DESC, "address.keyword");
-        Pageable pageable = PageRequest.of(0, 10, sort);
+        Pageable pageable = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "address.keyword"));
         Page<Customer> customers = repository.findByAddress("北京", pageable);
         System.out.println("Page customers " + customers.getContent().toString());
     }
@@ -195,7 +194,7 @@ public class CustomerRepositoryTest {
         SearchQuery searchQuery = new NativeSearchQueryBuilder()
 // .withQuery(builder)
 // .withIndices("your_index*").withTypes("your_type")
-// .withPageable(PageRequest.of(0,1))
+                .withPageable(PageRequest.of(0, 1))
 // .withSort(SortBuilders.scoreSort())
                 .withSort(SortBuilders.fieldSort("age").order(SortOrder.DESC))
                 .withSourceFilter(new FetchSourceFilterBuilder().withIncludes("userName").withExcludes("age").build())
