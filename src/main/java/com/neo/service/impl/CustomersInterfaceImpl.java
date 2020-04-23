@@ -140,27 +140,12 @@ public class CustomersInterfaceImpl implements CustomersInterface {
     public boolean updateCustomer() throws Exception {
         Customer customer = customerRepository.findByUserName("summer");
         System.out.println(customer);
-        customer.setAddress("秦皇岛9");
+        customer.setAddress("秦皇岛`1");
 //        es.update(INDEX, TYPE, customer.getId(), customer);
 //        ESHighLevelUtil esHighLevelUtil = new ESHighLevelUtil(new String[]{"localhost:9200"});
 //        esHighLevelUtil.updateData(INDEX, TYPE, customer.getId(), customer);
-//        repository.save(customer);
-//        Customer xcustomer = repository.findByUserName("summer");
-//        System.out.println(xcustomer);
-//        Map<String, Object> map = new HashMap<>();
-//        map.put("address", customer.getAddress());
-//        List<Object> objects = Lists.newArrayList();
-//        objects.add("address");
-//        objects.add(customer.getAddress());
-//        UpdateRequest updateRequest = new UpdateRequest().index("customer").
-//                type("customer").id(customer.getId()).doc(map)
-//                .fetchSource(new String[]{"id", "userName"}, null);
-//        UpdateResponse update = elasticsearchTemplate.update(
-//                new UpdateQueryBuilder().withId(customer.getId())
-//                        .withIndexName("customer").withType("customer")
-//                        .withUpdateRequest(updateRequest).withClass(Customer.class).build());
-        UpdateRequest updateRequest = new UpdateRequest(INDEX, TYPE, customer.getId())
-                .doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+        UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         UpdateQuery updateQuery = new UpdateQuery();
         updateQuery.setId(customer.getId());
         updateQuery.setIndexName(INDEX);
