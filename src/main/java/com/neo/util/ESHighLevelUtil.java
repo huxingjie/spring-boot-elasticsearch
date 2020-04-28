@@ -70,13 +70,12 @@ public class ESHighLevelUtil {
 ////        }
 //    }
 
-    public ESHighLevelUtil() throws Exception {
+    public ESHighLevelUtil(String[]  ipAddress) throws Exception {
         if (restHighLevelClient == null) {
-            HttpHost[] hosts = Arrays.stream(ipAddress.split(":"))
+            HttpHost[] hosts = Arrays.stream(ipAddress)
                     .map(this::makeHttpHost)
                     .filter(Objects::nonNull)
                     .toArray(HttpHost[]::new);
-            System.out.println("hosts :"+hosts.toString());
             log.debug("hosts:{}", Arrays.toString(hosts));
             restClientBuilder = RestClient.builder(hosts);
             restClientBuilder.setMaxRetryTimeoutMillis(MAX);

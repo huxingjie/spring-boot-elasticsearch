@@ -7,11 +7,8 @@ import com.neo.service.CustomersInterface;
 import com.neo.util.ESHighLevelUtil;
 import com.neo.util.ESUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Lists;
-import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.get.GetResult;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -22,7 +19,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,12 +27,8 @@ import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.core.query.*;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
@@ -141,9 +133,12 @@ public class CustomersInterfaceImpl implements CustomersInterface {
         Customer customer = customerRepository.findByUserName("summer");
         System.out.println(customer);
         customer.setAddress("秦皇岛`1");
+        //第一种
 //        es.update(INDEX, TYPE, customer.getId(), customer);
+        //第二种
 //        ESHighLevelUtil esHighLevelUtil = new ESHighLevelUtil(new String[]{"localhost:9200"});
 //        esHighLevelUtil.updateData(INDEX, TYPE, customer.getId(), customer);
+        //第三种
         UpdateRequest updateRequest = new UpdateRequest();
         updateRequest.doc(JSON.toJSONString(customer), XContentType.JSON).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         UpdateQuery updateQuery = new UpdateQuery();
@@ -152,7 +147,6 @@ public class CustomersInterfaceImpl implements CustomersInterface {
         updateQuery.setType(TYPE);
         updateQuery.setUpdateRequest(updateRequest);
         GetResult getResult = elasticsearchTemplate.update(updateQuery).getGetResult();
-//        return getResult != null;
-        return false;
+        return true;
     }
 }

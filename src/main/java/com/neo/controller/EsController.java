@@ -31,7 +31,7 @@ public class EsController {
         return customers;
     }
 
-    @RequestMapping("/func")
+    @RequestMapping(value = "/func", produces = "application/json;charset=UTF-8")
     public Page<Customer> getFuncResult() {
         Page<Customer> customers = customersInterface.searchCity(0, 10, "");
         return customers;
